@@ -177,7 +177,33 @@ void drawBrickCube()
         // TASK 2: WRITE YOUR CODE HERE. //
         ///////////////////////////////////
 
-        FragColor = vec4(1.0, 0.0, 0.0, 1.0);  // Replace this with your code.
+        vec3 T, B, N;
+        N = necNormal;
+
+        compute_tangent_vectors(necNormal, ecPosition, v2fTexCoord.st, T, B);
+
+        vec3 tanPerturbedNormal = normalize( texture(BrickNormalMap, v2fTexCoord.st).rgb * 2.0 - 1.0);
+        vec3 diffuseColor = texture(BrickDiffuseMap, v2fTexCoord.st).rgb;
+
+        // * Transform perturbation vector to eye space.
+        vec3 ecPerturbedNormal =  tanPerturbedNormal.x * T 
+                                + tanPerturbedNormal.y * B 
+                                + tanPerturbedNormal.z * N;
+
+        // * Use eye-space perturbation vector as normal vector in lighting
+        //   computation using Phong Reflection Model.
+        vec3 reflectVec = normalize(reflect(-lightVec, ecPerturbedNormal));
+
+        float N_dot_L = max(0.0, dot( ecPerturbedNormal, lightVec));
+        float R_dot_V = max(0.0, dot( reflectVec, viewVec));
+
+        float spec = R_dot_V == 0.0? 0.0: pow(R_dot_V, BrickShininess);
+
+        vec3 brickColor = (LightAmbient.rgb * diffuseColor
+                         + LightDiffuse.rgb * diffuseColor * N_dot_L
+                         + LightSpecular.rgb * BrickSpecularMaterial.r * spec);
+
+        FragColor = vec4(brickColor, 1.0);
     }
     else discard;
 }
@@ -221,8 +247,46 @@ void drawWoodenCube()
         ///////////////////////////////////
         // TASK 3: WRITE YOUR CODE HERE. //
         ///////////////////////////////////
+        vec2 c = MirrorTileDensity * v2fTexCoord.st;
+        vec2 p = fract(c) - vec2(0.5);
+        vec2 sqrP = pow(p, vec2(2.0));
 
-        FragColor = vec4(0.0, 0.0, 1.0, 1.0);  // Replace this with your code.
+        if (sqrP.x + sqrP.y > pow(MirrorRadius, 2.0))
+        {
+            // wooden region
+            vec3 reflectVec = normalize(reflect(-lightVec, necNormal));
+            vec3 diffuseColor = texture(WoodDiffuseMap, v2fTexCoord.st).rgb;
+
+            float N_dot_L = max(0.0, dot(necNormal, lightVec));
+            float R_dot_V = max(0.0, dot(reflectVec, viewVec));
+
+            float spec = R_dot_V == 0.0? 0.0: pow(R_dot_V, WoodShininess);
+
+            vec3 brickColor = (LightAmbient.rgb * diffuseColor
+                             + LightDiffuse.rgb * diffuseColor * N_dot_L
+                             + LightSpecular.rgb * WoodSpecularMaterial.r * spec);
+
+            FragColor = vec4(brickColor, 1.0);
+        }
+        else
+        {
+            vec3 N = necNormal;
+            vec3 B, T;
+            compute_tangent_vectors(N, ecPosition, v2fTexCoord.st, T, B);
+
+            float tanPerturbZ = sqrt(pow(MirrorRadius, 2.0) - sqrP.x - sqrP.y);
+            vec3 tanPerturbedNormal = normalize(vec3(p.x, p.y, tanPerturbZ));
+
+            vec3 ecPerturbedNormal = tanPerturbedNormal.x * T 
+                                   + tanPerturbedNormal.y * B 
+                                   + tanPerturbedNormal.z * N;
+
+            vec3 reflectVec = normalize(reflect(ecPosition, normalize(ecPerturbedNormal)));
+            reflectVec = (transpose(ViewMatrix) * vec4(reflectVec, 0.0)).xyz;
+            vec3 tempColor = texture(EnvMap, reflectVec).rgb;
+
+            FragColor = vec4(tempColor, 1.0);
+        }
     }
     else discard;
 }

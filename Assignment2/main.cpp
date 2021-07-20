@@ -338,14 +338,12 @@ static void MyDrawFunc(void)
         /////////////////////////////////////////////////////////////////////////////
 
         glm::mat4 modelMat0 = glm::mat4(1.0f);
-        
+
         ///////////////////////////////////
         // TASK 1: WRITE YOUR CODE HERE. //
         ///////////////////////////////////
-        // Scale the skybox to size "skyboxSize * skyboxSize * skyboxSize"
-        modelMat0[0][0] = skyboxSize;
-        modelMat0[1][1] = skyboxSize;
-        modelMat0[2][2] = skyboxSize;
+        modelMat0 = glm::scale(modelMat0, glm::vec3(skyboxSize, skyboxSize, skyboxSize));
+
 
         glm::mat4 modelViewMat0 = viewMat * modelMat0;
         glm::mat4 modelViewProjMat0 = projMat * modelViewMat0;
