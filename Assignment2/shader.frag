@@ -185,6 +185,10 @@ void drawBrickCube()
         vec3 tanPerturbedNormal = normalize( texture(BrickNormalMap, v2fTexCoord.st).rgb * 2.0 - 1.0);
         vec3 diffuseColor = texture(BrickDiffuseMap, v2fTexCoord.st).rgb;
 
+        // * Exaggerate the z scale of the perturbed normal vector to do bump mapping
+        tanPerturbedNormal.z *= DeltaNormal_Z_Scale;
+        tanPerturbedNormal = normalize(tanPerturbedNormal);
+
         // * Transform perturbation vector to eye space.
         vec3 ecPerturbedNormal =  tanPerturbedNormal.x * T 
                                 + tanPerturbedNormal.y * B 
